@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="780" Width="1980" ResizeMode="NoResize" MinHeight="780" MaxHeight="780" MinWidth="1980" MaxWidth="1980">
     <Grid>
-        <!--<Canvas x:Name="DotsConteinerRaR" Height="750" Width="1880">
+        <Canvas x:Name="SkudsMap" Height="750" Width="1880">
             <Canvas.Background>
                 <ImageBrush ImageSource="/Resources/Помещения больницы + СКУД.png"/>
             </Canvas.Background>
@@ -39,7 +39,6 @@
                 <Canvas x:Name="Skud8" Width="229" Height="255" Margin="5,12,0,0"/>
                 <Canvas x:Name="Skud7" Width="233" Height="255" Margin="5,12,0,0"/>
             </StackPanel>
-        </Canvas>-->
-        <DataGrid x:Name="TestGrid"/>
+        </Canvas>
     </Grid>
 </Window>

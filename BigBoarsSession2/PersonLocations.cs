@@ -12,6 +12,6 @@ namespace BigBoarsSession2
         public string PersonRole { get; set; }
         public int LastSecurityPointNumber { get; set; }
         public string LastSecurityPointDirection { get; set; }
-        public DateTime LastSecurityPointTime { get; set; }
+        public string LastSecurityPointTime { get; set; }
     }
 }

@@ -24,8 +24,6 @@ namespace BigBoarsSession2
         {
             InitializeComponent();
 
-            LoadPersonLocations();
-
             timer = new DispatcherTimer();
             timer.Interval = TimeSpan.FromSeconds(3);
             timer.Tick += Timer_Tick;
@@ -35,16 +33,11 @@ namespace BigBoarsSession2
         // что происходит каждый тик
         private void Timer_Tick(object sender, EventArgs e)
         {
-            UpdateMap();
+            LoadPersonLocationsFromApi();
         }
 
-        private void UpdateMap()
-        {
-            // Отображаем персонал на карте
-            DisplayPeopleOnMap();
-        }
-
-        private async void LoadPersonLocations()
+        // получить данные из api
+        private async void LoadPersonLocationsFromApi()
         {
             using (HttpClient client = new HttpClient())
             {
@@ -63,44 +56,138 @@ namespace BigBoarsSession2
                         personLocationsList.Add(location);
                     }
 
-                    DisplayPeopleOnMap(); // Отобразить персонал на карте
+                    LoadPersonLocations(); // Выполнить проверки по текущим местоположениям
                 }
                 else
                 {
-                    MessageBox.Show("Ошибка при загрузке данных");
+                    MessageBox.Show("Ошибка при загрузке данных с API.");
                 }
             }
         }
 
+        // проверка персон на карте
+        private void LoadPersonLocations()
+        {
+            var currentTime = DateTime.Now;
+
+            List<PersonLocations> personsToRemove = new List<PersonLocations>();
+            List<PersonLocations> newPersonsToShow = new List<PersonLocations>();
+
+            foreach (var location in personLocationsList.ToList())
+            {
+                if (location.LastSecurityPointDirection == "in" && location.PersonCode.EndsWith("A"))
+                {
+                    string oppositePersonCode = GetOppositePersonCode(location.PersonCode);
+                    var oppositeLocation = personLocationsList.FirstOrDefault(l => l.PersonCode == oppositePersonCode && l.LastSecurityPointDirection == "out");
+
+                    if (oppositeLocation != null && DateTime.Parse(oppositeLocation.LastSecurityPointTime) < currentTime)
+                    {
+                        personsToRemove.Add(location);
+                    }
+                    else if (DateTime.Parse(location.LastSecurityPointTime) < currentTime)
+                    {
+                        newPersonsToShow.Add(location);
+                    }
+                }
+            }
+
+            // Удаление точек, которые не должны отображаться
+            foreach (var personToRemove in personsToRemove)
+            {
+                personLocationsList.Remove(personToRemove);
+                currentPersonLocations.Remove(personToRemove.PersonCode); // Удаляем из currentPersonLocations
+            }
+
+            // Добавляем новые точки для отображения
+            foreach (var newPerson in newPersonsToShow)
+            {
+                personLocationsList.Add(newPerson);
+                currentPersonLocations[newPerson.PersonCode] = newPerson;
+            }
+
+            DisplayPeopleOnMap();
+        }
+
+        // Метод для получения противоположного идентификатора
+        private string GetOppositePersonCode(string personCode)
+        {
+            return personCode.EndsWith("A") ? personCode.Replace("A", "B") : personCode.Replace("B", "A");
+        }
 
         // метод для отображения персонала на карте помещений
         private void DisplayPeopleOnMap()
         {
-            if (personLocationsList.Any())
+            ClearMap(); // Очистить карту от старых точек
+
+            foreach (var person in personLocationsList)
             {
-                foreach (var person in personLocationsList)
+                Canvas canvas = GetCanvasBySkudNumber(person.LastSecurityPointNumber);
+                if (canvas != null)
                 {
-                    Canvas canvas = GetCanvasBySkudNumber(person.LastSecurityPointNumber); // Получаем Canvas по номеру помещения
-                    if (canvas != null)
+                    foreach (var location in currentPersonLocations.Values)
                     {
-                        Border border = new Border();
-                        Ellipse ellipse = new Ellipse();
-
-                        ellipse.Width = 15;
-                        ellipse.Height = 15;
-
-                        SolidColorBrush brush = person.PersonRole == "Сотрудник" ? Brushes.Blue : Brushes.Green;
-                        ellipse.Fill = brush;
-
-                        border.Child = ellipse;
-                        border.CornerRadius = new CornerRadius(7.5); // Половина высоты круга
-
-                        Canvas.SetLeft(border, GetRandomXPosition(canvas, ellipse.Width));
-                        Canvas.SetTop(border, GetRandomYPosition(canvas, ellipse.Height));
-                        Canvas.SetZIndex(border, 1);
-
-                        canvas.Children.Add(border);
+                        if (location.LastSecurityPointNumber == person.LastSecurityPointNumber)
+                        {
+                            if (!IsPersonAlreadyOnMap(canvas, location))
+                            {
+                                AddPersonToMap(canvas, location);
+                            }
+                        }
                     }
+                }
+            }
+        }
+
+        //Очистка карты
+        private void ClearMap()
+        {
+            foreach (Canvas canvas in SkudsMap.Children.OfType<Canvas>())
+            {
+                canvas.Children.Clear();
+            }
+        }
+
+        // проверка на наличие персоны на карте
+        private bool IsPersonAlreadyOnMap(Canvas canvas, PersonLocations person)
+        {
+            foreach (Border border in canvas.Children.OfType<Border>())
+            {
+                // Проверяем наличие персонала с таким же PersonCode на данном Canvas
+                if (border.Tag.ToString() == person.PersonCode)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // добавить персону на карту
+        private void AddPersonToMap(Canvas canvas, PersonLocations person)
+        {
+            if (currentPersonLocations.ContainsKey(person.PersonCode))
+            {
+                // Убедимся, что персонаж еще не отображается на карте
+                if (!IsPersonAlreadyOnMap(canvas, person))
+                {
+                    // Добавляем персонажа на карту
+                    Border border = new Border();
+                    Ellipse ellipse = new Ellipse();
+
+                    ellipse.Width = 15;
+                    ellipse.Height = 15;
+
+                    SolidColorBrush brush = person.PersonRole == "Сотрудник" ? Brushes.Blue : Brushes.Green;
+                    ellipse.Fill = brush;
+
+                    border.Child = ellipse;
+                    border.CornerRadius = new CornerRadius(7.5);
+                    border.Tag = person.PersonCode;
+
+                    Canvas.SetLeft(border, GetRandomXPosition(canvas, ellipse.Width));
+                    Canvas.SetTop(border, GetRandomYPosition(canvas, ellipse.Height));
+                    Canvas.SetZIndex(border, 1);
+
+                    canvas.Children.Add(border);
                 }
             }
         }
@@ -118,6 +205,7 @@ namespace BigBoarsSession2
             return canvas;
         }
 
+        // найти нужный канвас среди всех элементов 
         private Canvas FindCanvasRecursively(DependencyObject parent, int skudNumber)
         {
             if (parent is Canvas canvas && canvas.Name == $"Skud{skudNumber}")

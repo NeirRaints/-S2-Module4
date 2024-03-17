@@ -103,8 +103,5 @@
   <ItemGroup>
     <Resource Include="Resources\Помещения больницы + СКУД.png" />
   </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\Приемный покой.png" />
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

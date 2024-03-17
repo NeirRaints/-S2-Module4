@@ -141,9 +141,17 @@ namespace BigBoarsSession2
         //Очистка карты
         private void ClearMap()
         {
-            foreach (Canvas canvas in SkudsMap.Children.OfType<Canvas>())
+            ClearRoomElements(SkudsMap);
+        }
+
+        private void ClearRoomElements(Canvas canvas)
+        {
+            foreach (StackPanel stackPanel in canvas.Children.OfType<StackPanel>())
             {
-                canvas.Children.Clear();
+                foreach (Canvas roomCanvas in stackPanel.Children.OfType<Canvas>())
+                {
+                    roomCanvas.Children.Clear();
+                }
             }
         }
 
@@ -196,12 +204,6 @@ namespace BigBoarsSession2
         private Canvas GetCanvasBySkudNumber(int skudNumber)
         {
             var canvas = FindCanvasRecursively(SkudsMap, skudNumber);
-
-            if (canvas == null)
-            {
-                MessageBox.Show($"Canvas с именем Skud{skudNumber} не найден.");
-            }
-
             return canvas;
         }
 
